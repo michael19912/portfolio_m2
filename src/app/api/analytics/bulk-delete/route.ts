@@ -1,7 +1,9 @@
+// ⬇️ MUST be first (before imports)
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-
-export const dynamic = 'force-dynamic'
 
 const ADMIN_TOKEN =
   process.env.ANALYTICS_ADMIN_TOKEN ||
@@ -9,7 +11,6 @@ const ADMIN_TOKEN =
 
 export async function POST(request: NextRequest) {
   try {
-    // ✅ Create Supabase client at REQUEST TIME
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -21,17 +22,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // ✅ Node runtime → safe
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // ✅ Auth check
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.replace('Bearer ', '')
 
     if (!token || token !== ADMIN_TOKEN) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    // ✅ Parse body (safe with POST)
     const { eventType, startDate, endDate } = await request.json()
 
     if (!eventType || !startDate || !endDate) {
@@ -42,7 +45,9 @@ export async function POST(request: NextRequest) {
     }
 
     const startDateTime = new Date(startDate).toISOString()
-    const endDateTime = new Date(`${endDate}T23:59:59.999Z`).toISOString()
+    const endDateTime = new Date(
+      `${endDate}T23:59:59.999Z`
+    ).toISOString()
 
     const { data, error } = await supabase
       .from('analytics_events')
